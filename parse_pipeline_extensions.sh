@@ -25,12 +25,14 @@ import requests
 from datetime import datetime
 from subprocess import call, Popen, PIPE
 
-#export PPE_POKE=1
+# export PPE_POKE=1
+# export PPE_TARGET_ID=<specific id to force>
 #./parse_pipeline_extensions.sh $HOST_TO_CHECK "$TARGET_EXTENSION"
 
 
 DEBUG=os.environ.get('DEBUG')
 PPE_POKE=os.environ.get('PPE_POKE')
+PPE_TARGET_ID=os.environ.get('PPE_TARGET_ID')
 
 SCRIPT_START_TIME = timeit.default_timer()
 
@@ -39,7 +41,8 @@ def print_help ():
     print "usage: parse_pipeline_extensions.py targetip extensionURL"
     print
     print "\toptions (as env vars):"
-    print "\t   PPE_POKE    : if 1, submits PUT against the URL, else just gets info"
+    print "\t PPE_POKE      : if 1, submits PUT against the URL, else just gets info"
+    print "\t PPE_TARGET_ID : if set, and this ID matches the URL, will just poke this one"
     print
 
 # begin main execution sequence
@@ -63,28 +66,47 @@ try:
     full_list = response.json()
 
     target_id = None
+    target_id_list = []
+    target_count = 0
     for ext in full_list:
         if ext["url"] == target_ext:
             print "Found extension for url " + str(target_ext)
-            print "\tid is " + ext["_id"]
-            target_id = ext["_id"]
+            if PPE_TARGET_ID:
+                if ext["_id"] == PPE_TARGET_ID:
+                    print "Found exact id requested"
+                    print "\tid is " + ext["_id"]
+                    target_id = ext["_id"]
+                    target_id_list.append(target_id)
+                    target_count += 1
+                else:
+                    print "Extension ID doesn't match, skipping"
+            else:
+                print "\tid is " + ext["_id"]
+                target_id = ext["_id"]
+                target_id_list.append(target_id)
+                target_count += 1
 
     if target_id != None:
-        print "Poking " + str(target_ext) + " on " + str(target_ip)
-        url = "https://" + str(target_ip) + ":9443/pipeline/extensions/" + str(target_id)
-        payload = '{"url":"'+str(target_ext)+'"}'
-        headers = { "Content-Type": "application/json" }
-        if PPE_POKE == "1":
-            response = requests.put(url, data=payload, headers=headers, verify=False)
-            print "put responded " + str(response.status_code)
-            if response.status_code != 200: 
-                print "poke failed"
-                exit_code = 1
+        if target_count > 1:
+            print "warning - multiple extensions found for that id:"
+            print "\t" + str(target_id_list)
+            print "set env var PPE_TARGET_ID to the one to be updated"
         else:
-            print "poke not set, would have sent:"
-            print str(payload)
-            print "with headers " + str(headers)
-            print "to url " + str(url)
+            print "Poking " + str(target_ext) + " on " + str(target_ip)
+            url = "https://" + str(target_ip) + ":9443/pipeline/extensions/" + str(target_id)
+            payload = '{"url":"'+str(target_ext)+'"}'
+            headers = { "Content-Type": "application/json" }
+            if PPE_POKE == "1":
+                response = requests.put(url, data=payload, headers=headers, verify=False)
+                print "put responded " + str(response.status_code)
+                if response.status_code != 200: 
+                    print "poke failed"
+                    exit_code = 1
+            else:
+                print "poke not set, would have sent:"
+                print str(payload)
+                print "with headers " + str(headers)
+                print "to url " + str(url)
 
     endtime = timeit.default_timer()
     print "Script completed in " + str(endtime - SCRIPT_START_TIME) + " seconds"

@@ -66,6 +66,7 @@ try:
     full_list = response.json()
 
     target_id = None
+    target_enabled = False
     target_id_list = []
     target_count = 0
     for ext in full_list:
@@ -76,6 +77,7 @@ try:
                     print "Found exact id requested"
                     print "\tid is " + ext["_id"]
                     target_id = ext["_id"]
+                    target_enabled = ext["enabled"]
                     target_id_list.append(target_id)
                     target_count += 1
                 else:
@@ -83,6 +85,7 @@ try:
             else:
                 print "\tid is " + ext["_id"]
                 target_id = ext["_id"]
+                target_enabled = ext["enabled"]
                 target_id_list.append(target_id)
                 target_count += 1
 
@@ -93,8 +96,8 @@ try:
             print "set env var PPE_TARGET_ID to the one to be updated"
         else:
             print "Poking " + str(target_ext) + " on " + str(target_ip)
-            url = "https://" + str(target_ip) + ":9443/pipeline/extensions/" + str(target_id)
-            payload = '{"url":"'+str(target_ext)+'"}'
+            url = "https://%s:9443/pipeline/extensions/%s" % (target_ip, target_id)
+            payload = '{"url":"%s"}' % target_ext
             headers = { "Content-Type": "application/json" }
             if PPE_POKE == "1":
                 response = requests.put(url, data=payload, headers=headers, verify=False)
@@ -102,6 +105,13 @@ try:
                 if response.status_code != 200: 
                     print "poke failed"
                     exit_code = 1
+                else:
+                    # if it was enabled, re-enable it
+                    if target_enabled:
+                        print "Re-enabling %s" % target_ext
+                        url = "https://%s:9443/pipeline/extensions/%s/enable" % (target_ip, target_id)
+                        response = requests.post(url, verify=False)
+                        print "re-enable post responded " + str(response.status_code)
             else:
                 print "poke not set, would have sent:"
                 print str(payload)

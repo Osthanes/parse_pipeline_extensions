@@ -104,6 +104,7 @@ try:
                 print "put responded " + str(response.status_code)
                 if response.status_code != 200: 
                     print "poke failed"
+                    print response.text
                     exit_code = 1
                 else:
                     # if it was enabled, re-enable it

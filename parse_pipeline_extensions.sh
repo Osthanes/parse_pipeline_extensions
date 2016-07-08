@@ -33,6 +33,7 @@ from subprocess import call, Popen, PIPE
 DEBUG=os.environ.get('DEBUG')
 PPE_POKE=os.environ.get('PPE_POKE')
 PPE_TARGET_ID=os.environ.get('PPE_TARGET_ID')
+CREATE_IF_NOT_FOUND=os.environ.get('CREATE_IF_NOT_FOUND')
 
 SCRIPT_START_TIME = timeit.default_timer()
 
@@ -41,8 +42,9 @@ def print_help ():
     print "usage: parse_pipeline_extensions.py targetip extensionURL"
     print
     print "\toptions (as env vars):"
-    print "\t PPE_POKE      : if 1, submits PUT against the URL, else just gets info"
-    print "\t PPE_TARGET_ID : if set, and this ID matches the URL, will just poke this one"
+    print "\t PPE_POKE            : if 1, submits PUT against the URL, else just gets info"
+    print "\t PPE_TARGET_ID       : if set, and this ID matches the URL, will just poke this one"
+    print "\t CREATE_IF_NOT_FOUND : if 1, submits POST against the URL to create new extension if needed"
     print
 
 # begin main execution sequence
@@ -118,6 +120,13 @@ try:
                 print str(payload)
                 print "with headers " + str(headers)
                 print "to url " + str(url)
+    elif CREATE_IF_NOT_FOUND == "1":
+        print "Creating " + str(target_ext) + " on " + str(target_ip)
+        url = "https://%s:9443/pipeline/extensions" % (target_ip)
+        payload = '{"url":"%s"}' % target_ext
+        headers = { "Content-Type": "application/json" }
+        response = requests.post(url, data=payload, headers=headers, verify=False)
+        print "post responded " + str(response.status_code)
 
     endtime = timeit.default_timer()
     print "Script completed in " + str(endtime - SCRIPT_START_TIME) + " seconds"

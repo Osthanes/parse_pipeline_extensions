@@ -35,6 +35,7 @@ PPE_POKE=os.environ.get('PPE_POKE')
 PPE_TARGET_ID=os.environ.get('PPE_TARGET_ID')
 CREATE_IF_NOT_FOUND=os.environ.get('CREATE_IF_NOT_FOUND')
 FORCE_ENABLE=os.environ.get('FORCE_ENABLE')
+FORCE_DISABLE=os.environ.get('FORCE_DISABLE')
 
 SCRIPT_START_TIME = timeit.default_timer()
 
@@ -47,6 +48,7 @@ def print_help ():
     print "\t PPE_TARGET_ID       : if set, and this ID matches the URL, will just poke this one"
     print "\t CREATE_IF_NOT_FOUND : if 1, submits POST against the URL to create new extension if needed"
     print "\t FORCE_ENABLE        : if 1, sets the extension to enabled, regardless of previous value"
+    print "\t FORCE_DISABLE       : if 1, sets the extension to disabled, regardless of previous value"
     print
 
 # begin main execution sequence
@@ -112,7 +114,7 @@ try:
                     exit_code = 1
                 else:
                     # if it was enabled, re-enable it
-                    if target_enabled or FORCE_ENABLE == "1":
+                    if (!FORCE_DISABLE) and (target_enabled or FORCE_ENABLE == "1"):
                         print "Re-enabling %s" % target_ext
                         url = "https://%s:9443/pipeline/extensions/%s/enable" % (target_ip, target_id)
                         response = requests.post(url, verify=False)

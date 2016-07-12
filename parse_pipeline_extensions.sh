@@ -114,7 +114,7 @@ try:
                     exit_code = 1
                 else:
                     # if it was enabled, re-enable it
-                    if (!FORCE_DISABLE) and (target_enabled or FORCE_ENABLE == "1"):
+                    if (FORCE_DISABLE != "1") and (target_enabled or FORCE_ENABLE == "1"):
                         print "Re-enabling %s" % target_ext
                         url = "https://%s:9443/pipeline/extensions/%s/enable" % (target_ip, target_id)
                         response = requests.post(url, verify=False)
